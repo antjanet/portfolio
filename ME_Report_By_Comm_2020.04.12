@@ -1,0 +1,66 @@
+/************************************************************************************************************************
+Purpose:  Provide a report to a client department of all of their expenses in the three prior fiscal years.
+Author:   Janet Antunez
+Date:     April 2010
+Comments:
+Date        Author          Comment
+--------    ------------    -------------------------------------------------------------------------------------------
+
+************************************************************************************************************************/
+
+/* Formatted on 4/12/2020 2:48:37 PM (QP5 v5.326) */
+
+SELECT poc2.doc_dept_cd AS "Department"
+    , poc2.doc_cd as "Document Code"
+    , poc2.doc_id as "Document ID"
+    , poc2.doc_vers_no as "Version No"
+    , poc2.curr_bfy as "Budget FY"
+    , poc2.curr_fy as "FY"
+    , poc2.curr_per as "Period"
+    , TRUNC(poc2.doc_crea_dt) as "Date Created"
+    , TRUNC(poc2.doc_last_dt) as "Last Updated"
+    --, poc2.doc_func_cd as "Function Code"
+    , dfc.doc_func_nm as "Function"
+    --, poc2.doc_phase_cd as "Phase Code"
+    , dpc.doc_phase_nm as "Phase"
+    , poc2.vend_cust_cd AS "Vendor Code"
+    , poc2.doc_comm_ln_no as "Commodity Line No"
+    --, poc2.doc_comm_no as "Commodity No"
+    , poc2.comm_cd as "Commodity Code"
+    , poc2.comm_dscr as "Commodity Description"
+    , poc2.qty as "Quantity"
+    , poc2.unit_meas_cd as "UOM"
+    , poc2.unit_price as "Unit Price"
+    , poc2.tax_tot_am as "Tax Amount"
+    , poc2.itm_tot_am as "Item Total Amount"
+    , POC2.invd_qty as "Invoiced Qty"
+    , poc2.invd_cntrc_am as "Invoiced Amt"
+    , CASE WHEN poc2.invd_fnl_fl = '0' THEN NULL ELSE 'Yes' END AS "Invoiced Final"
+    , poc2.rcvd_qty as "Received Qty"
+    , poc2.rcvd_cntrc_am as "Received Amt"
+    , CASE WHEN poc2.rcvd_fnl_fl = '0' THEN NULL ELSE 'Yes' END AS "Received Final"
+    , poc2.pd_qty as "Paid Qty"
+    , poc2.pd_cntrc_am as "Paid Amt"
+    , poc2.rfed_am as "Referenced Amount"
+    --, poc2.mtch_ind as "Match Indicator"
+    , mi.cvl_mtch_ind_dv as "Match Type"
+    , CASE WHEN poc2.pd_fnl_fl = '0' THEN NULL ELSE 'Yes' END AS "Paid Final"
+FROM (SELECT poc1.*, ROW_NUMBER () OVER (PARTITION BY doc_dept_cd, doc_cd, doc_id, doc_comm_ln_no ORDER BY doc_vers_no DESC) AS record
+      FROM o_advuser.po_doc_comm poc1
+      ) poc2
+    , o_advuser.cvl_doc_func_cd dfc
+    , o_advuser.cvl_doc_phase_cd dpc
+    , o_advuser.cvl_mtch_ind mi
+WHERE
+    dfc.doc_func_cd = poc2.doc_func_cd
+    AND dpc.doc_phase_cd = poc2.doc_phase_cd
+    AND mi.cvl_mtch_ind_sv = poc2.mtch_ind
+    AND poc2.record = 1
+    AND poc2.doc_dept_cd = 'ME'
+    --AND doc_cd = 'PD'
+    --AND doc_id = '20000079'
+    --AND poc2.comm_cd = '32525'
+    AND poc2.curr_bfy IN ('2018','2019','2020')
+    --, poc2.curr_fy as "FY"
+    --, poc2.curr_per as "Period"
+ORDER BY poc2.curr_bfy, poc2.doc_cd, poc2.doc_id, poc2.doc_comm_ln_no

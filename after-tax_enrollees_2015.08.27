@@ -1,0 +1,41 @@
+/************************************************************************************************************************
+Purpose:  Identify retirement plan enrollees in after-tax plans.
+Author:   Janet Antunez
+Date:     08/27/2015
+Comments:
+Date        Author          Comment
+--------    ------------    -------------------------------------------------------------------------------------------
+
+************************************************************************************************************************/
+
+SELECT c.*
+    --distinct c.internal_empl_id
+FROM
+    (
+SELECT distinct internal_empl_id
+FROM o_hrmuser.ded_parm
+WHERE
+    dedtyp_cd IN ('ED007','ED008')
+AND expiration_dt = to_date('12/31/9999','mm/dd/yyyy')
+--AND effective_dt >= to_date('12/16/2014','mm/dd/yyyy')
+AND ovrd_ded_pc > 0) a,
+    (
+SELECT distinct internal_empl_id
+FROM o_hrmuser.ded_parm
+WHERE dedtyp_cd NOT IN ('ED007','ED008')
+AND appointment_id = ' '
+AND dedtyp_cd IN ('ED001','ED002','ED003','ED004','ED005','ED006','ED038','ED039','ED040','ED041',
+                        'ED042','ED043','ED074','ED075','ED076','ED077','ED078','ED079')
+AND expiration_dt = to_date('12/31/9999','mm/dd/yyyy')
+--AND effective_dt >= to_date('12/16/2014','mm/dd/yyyy')
+AND ovrd_ded_pc > 0) b,
+    o_hrmuser.ded_parm c
+WHERE
+    a.internal_empl_id = b.internal_empl_id
+    AND b.internal_empl_id = c.internal_empl_id 
+    AND c.dedtyp_cd LIKE 'ED%'
+    AND c.expiration_dt = to_date('12/31/9999','mm/dd/yyyy')
+    AND appointment_id = ' '
+order by
+    c.internal_empl_id
+    
